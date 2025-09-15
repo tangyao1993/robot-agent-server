@@ -1,0 +1,7 @@
+venv
+assets/
+*.mp4
+*.raw
+models/
+*.pyc
+gemini_keys
