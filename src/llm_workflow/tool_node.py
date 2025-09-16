@@ -1,5 +1,6 @@
 from .agent_state import AgentState
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from langchain_core.runnables.config import RunnableConfig
 from langchain_core.messages import ToolMessage
 from online_music_player_v2 import get_music
 import asyncio
@@ -25,13 +26,17 @@ def get_tool_definition(tools_definition: List[Dict[str, Any]], tool_name: str) 
             return tool
     return None
 
-def tool_node(state: AgentState, config: Dict[str, Any]):
+def tool_node(state: AgentState, config: Optional[RunnableConfig] = None):
 
     logger.info("==========tool_node==========")
 
     #main_type：local 和 remote，local 是本地函数分长时间和短时间函数，remote 是设备端全部当做异步处理
     #sub_type：sync 和 async，sync 是同步表示必须要返回结果，async 是异步表示直接返回处理中的状态
 
+    if config is None:
+        logger.error("tool_node 需要 config 参数")
+        return {"messages": state["messages"], "current_step": state.get("current_step", 0) + 1}
+    
     client_session = config["configurable"]["client_session"]
 
 

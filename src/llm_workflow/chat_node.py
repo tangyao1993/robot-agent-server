@@ -1,14 +1,22 @@
 from .agent_state import AgentState
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 from llm_workflow.system_instruction import ROLE_INSTRUCTION
 from langchain_core.messages import SystemMessage
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from langchain_core.runnables.config import RunnableConfig
 import logging
+from config import get_ollama_config
+
 logger = logging.getLogger(__name__)
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite-preview-06-17",
-                             google_api_key="AIzaSyAhvycuMLKRzdsuMG7l_l8V5rZEIyWW-S4")
-def chat_node(state: AgentState, config: Dict[str, Any]):
+# 获取 Ollama 配置
+ollama_config = get_ollama_config()
+llm = ChatOllama(
+    model=ollama_config["model_name"],
+    base_url=ollama_config["base_url"],
+    temperature=0.7
+)
+def chat_node(state: AgentState, config: Optional[RunnableConfig] = None):
     logger.info("==========chat_node==========")
     messages = [SystemMessage(content=ROLE_INSTRUCTION)] + state["messages"]
 

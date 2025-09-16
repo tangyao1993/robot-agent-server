@@ -13,6 +13,15 @@ def get_google_config():
         "model_name": "gemini-1.5-pro-latest"
     }
 
+def get_ollama_config():
+    """
+    获取 Ollama 服务的配置。
+    """
+    return {
+        "base_url": os.getenv("OLLAMA_BASE_URL", "http://192.168.1.4:11434"),
+        "model_name": os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+    }
+
 def get_tts_config():
     """
     获取TTS服务的配置（例如API地址）。
