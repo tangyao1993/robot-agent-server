@@ -1,84 +1,227 @@
-### 🤖 `robot-agent` (机器人客户端)
+# 🧠 Robot Agent Server - 云端大脑
 
-这个项目是运行在 **ESP32-S3** 嵌入式设备上的 **MicroPython** 应用程序。它直接控制机器人的硬件，并作为用户与服务器之间的桥梁。
+基于 **asyncio** 的高性能 Python 服务器，是整个 AI 机器人系统的智能核心。
 
-**核心功能:**
+## 🎯 重构后的特点
 
-1.  **硬件驱动**:
-    *   **屏幕**: 使用 `LVGL` 图形库驱动一块彩色屏幕，可以显示机器人的各种状态和动画（例如，通过 `image_state_display.py` 实现的眨眼、哭泣、惊讶等表情）。
-    *   **麦克风**: 通过 `microphone.py` 捕获用户的声音。
-    *   **扬声器**: 通过 `speaker.py` 播放声音。
-    *   **物理按键**: 作为用户发起对话的触发器。
+- **架构简化**：采用模块化文件夹结构，代码更清晰
+- **Ollama集成**：使用本地Ollama模型替代Gemini，降低成本
+- **工作流简化**：LangGraph工作流从6个节点简化为2个节点
+- **代码精简**：移除了复杂的视频处理和音乐播放功能
 
-2.  **核心工作流程**:
-    *   **待机**: 程序启动后，设备进入待机状态，屏幕上可能会显示待机动画（如眨眼）。
-    *   **录音与上传**: 当用户按下物理按键时，设备会立即开始通过麦克风录音，并通过 `WebSocket` 连接，将音频数据实时地、流式地传输到 `robot-agent-server`。
-    *   **接收与响应**: 录音结束后，它会等待服务器的回应。服务器会将生成的语音流式传输回来，`robot-agent` 接收到这些音频数据后，立即通过扬声器播放出来。
-    *   **远程工具执行**: 它自身定义了一些可以在本地执行的“工具”（定义在 `tools.py` 中）。服务器可以发送一个 JSON 指令，要求设备执行某个工具（比如调整屏幕亮度、播放特定动画等），设备执行后会将结果返回给服务器。
+## 📁 文件结构
 
-**小结**: `robot-agent` 本身不具备智能，它是一个纯粹的“感知和执行”端，负责收集用户的声音并忠实地执行来自服务器的指令。
-
----
-
-### 🧠 `robot-agent-server` (云端大脑)
-
-这个项目是一个基于 `asyncio` 的高性能 Python 服务器，是整个系统的智能核心。它负责处理所有复杂的计算任务。
-
-**核心功能:**
-
-1.  **连接管理**:
-    *   通过 `websocket_server.py` 监听并管理来自 `robot-agent` 客户端的 `WebSocket` 连接。
-    *   当设备连接时，通过 `message_handler.py` 中的注册流程，记录设备的 MAC 地址和它所支持的“工具”列表，并将设备信息存入数据库(`database_manager.py`)。
-
-2.  **核心工作流程**:
-    *   **语音转文字 (ASR)**: 接收到客户端发来的音频流后，使用 `fun_asr_local.py` 中的语音识别引擎，将完整的音频数据转换成文字。
-    *   **AI 大脑处理**: 将识别出的文字，连同客户端的历史对话记录，一起发送给一个大型语言模型 (LLM) 进行处理（从代码结构 `agent_graph` 和 `gemini_key` ，使用了 Google Gemini 模型）。
-    *   **决策与工具调用**: AI 大脑根据用户的输入进行决策。如果用户的意图是调用一个设备端的功能（例如“把屏幕调亮”），AI会生成一个调用工具的指令，服务器再将该指令通过 WebSocket 发送给 `robot-agent` 执行。
-    *   **文字转语音 (TTS)**: AI 大脑生成回复文本后，`tts_processor.py` 会调用 TTS 引擎，将这段文字实时转换成语音流。
-    *   **流式响应**: 最关键的一步，服务器不会等所有语音都生成完毕再发送，而是边生成边通过 `WebSocket` 将语音数据块流式地传回给 `robot-agent`，极大地降低了用户听见回复的延迟。
-
-**小结**: `robot-agent-server` 是机器人的“大脑”，它完成了从“听懂”（ASR）到“思考”（LLM），再到“说话”（TTS）的整个认知过程。
-
----
-
-### 交互流程图
-
-为了更直观地展示它们的协作方式，我为你创建了一个交互流程图：
-
-```Mermaid
-sequenceDiagram
-    participant User as 用户
-    participant Agent as robot-agent (设备端)
-    participant Server as robot-agent-server (云端)
-    participant ASR as 语音识别服务
-    participant LLM as AI大语言模型
-    participant TTS as 语音合成服务
-
-    User->>Agent: 按下物理按键
-    Agent->>Server: 建立WebSocket连接并注册
-    Server-->>Agent: 注册成功
-
-    activate Agent
-    User->>Agent: 开始说话
-    Agent->>Server: [流式传输] 实时麦克风音频
-    User->>Agent: 结束说话
-    Agent->>Server: [流式传输] 发送音频结束信号
-    deactivate Agent
-
-    activate Server
-    Server->>ASR: 发送完整音频数据
-    ASR-->>Server: 返回识别后的文本
-
-    Server->>LLM: 发送文本和历史对话
-    LLM-->>Server: [流式返回] AI生成的回复文本
-
-    Server->>TTS: [流式处理] 将文本分句并合成语音
-    TTS-->>Server: [流式返回] 合成的语音流
-
-    Server->>Agent: [流式传输] 将语音流实时发回设备
-    deactivate Server
-
-    activate Agent
-    Agent->>User: 实时播放收到的语音
-    deactivate Agent
 ```
+robot-agent-server/
+├── src/
+│   ├── main.py                    # 主程序入口
+│   ├── network/
+│   │   ├── websocket_server.py    # WebSocket服务器
+│   │   └── message_handler.py     # 消息处理
+│   ├── processors/
+│   │   ├── fun_asr_local.py       # 本地语音识别
+│   │   └── tts_processor.py       # 语音合成
+│   ├── workflow/
+│   │   ├── graph.py               # LangGraph工作流
+│   │   ├── nodes.py               # 工作流节点
+│   │   └── state.py               # 工作流状态
+│   ├── llm/
+│   │   └── ollama_client.py       # Ollama客户端
+│   ├── database/
+│   │   └── database_manager.py    # 数据库管理
+│   └── utils/
+│       └── audio_utils.py         # 音频工具
+├── assets/
+│   └── audio_files/              # 音频文件存储
+├── config/
+│   └── settings.py               # 配置文件
+├── mysql.sql                     # 数据库结构
+├── requirements.txt              # 依赖包
+└── test.py                       # 测试文件
+```
+
+## 🔧 核心组件
+
+### 1. 网络层
+- **WebSocket服务器**: 管理客户端连接和消息路由
+- **消息处理器**: 处理MCP协议消息和音频流
+- **会话管理**: 维护设备会话状态
+
+### 2. 处理层
+- **语音识别(ASR)**: 使用FunASR进行本地语音识别
+- **语音合成(TTS)**: 支持多种TTS服务的语音合成
+- **音频处理**: 音频格式转换和流式处理
+
+### 3. AI层
+- **Ollama客户端**: 连接本地Ollama服务
+- **LangGraph工作流**: 简化的状态机工作流
+- **对话管理**: 维护对话上下文和历史
+
+### 4. 数据层
+- **MySQL数据库**: 存储设备信息和对话历史
+- **音频文件**: 管理生成的音频文件
+- **配置管理**: 系统配置和环境变量
+
+## 🚀 工作流程
+
+### 简化的LangGraph工作流
+```
+[客户端连接] → Entry Node → Chat Node → [响应客户端]
+     ↑                                    ↓
+     └──────────── [完成] ←────────────────┘
+```
+
+### 详细处理流程
+1. **客户端连接**
+   - WebSocket握手和认证
+   - 设备注册和能力上报
+   - 创建会话上下文
+
+2. **音频处理**
+   - 接收客户端音频流
+   - 缓存完整的音频数据
+   - 调用ASR服务转换为文本
+
+3. **AI处理**
+   - 将文本发送给Ollama模型
+   - 生成回复文本
+   - 调用TTS服务生成语音
+
+4. **响应返回**
+   - 流式返回音频数据
+   - 更新对话历史
+   - 清理临时资源
+
+## ⚙️ 配置说明
+
+### 环境变量
+```bash
+# Ollama配置
+OLLAMA_BASE_URL=http://192.168.1.4:11434
+OLLAMA_MODEL=qwen2.5:7b
+
+# TTS服务配置（可选）
+MINDCRaft_API_URL=你的TTS服务URL
+MINDCRaft_API_KEY=你的TTS服务密钥
+
+# 服务器配置
+HOST=0.0.0.0
+PORT=8889
+```
+
+### 数据库配置
+```sql
+-- 创建数据库和表结构
+mysql -u root -p < mysql.sql
+```
+
+## 📦 部署步骤
+
+### 1. 安装依赖
+```bash
+cd robot-agent-server
+pip install -r requirements.txt
+```
+
+### 2. 配置数据库
+```bash
+# 创建数据库
+mysql -u root -p -e "CREATE DATABASE robot_agent CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 导入表结构
+mysql -u root -p robot_agent < mysql.sql
+```
+
+### 3. 启动Ollama服务
+```bash
+# 启动Ollama服务
+ollama serve
+
+# 拉取模型
+ollama pull qwen2.5:7b
+```
+
+### 4. 运行服务器
+```bash
+cd src
+python main.py
+```
+
+服务器将在 `0.0.0.0:8889` 启动，WebSocket端点为 `/ws`
+
+## 🔧 开发和调试
+
+### 运行测试
+```bash
+cd src
+python test.py
+```
+
+### 日志配置
+在 `config/settings.py` 中配置日志级别：
+```python
+LOG_LEVEL = "INFO"  # DEBUG, INFO, WARNING, ERROR
+```
+
+### 性能监控
+- WebSocket连接数
+- 音频处理延迟
+- ASR和TTS调用时间
+- 数据库查询性能
+
+## 🎨 MCP协议支持
+
+支持的消息类型：
+- `mcp/registerTools`: 设备注册
+- `mcp/audio/start_stream`: 开始音频流
+- `mcp/audio/end_stream`: 结束音频流
+- `mcp/server/start_audio`: 服务器开始音频
+- `mcp/server/end_audio`: 服务器结束音频
+- `mcp/call_tool`: 调用工具
+
+## 📋 技术规格
+
+- **框架**: Python 3.8+ with asyncio
+- **Web服务器**: 自定义WebSocket服务器
+- **AI模型**: Ollama (qwen2.5:7b)
+- **ASR**: FunASR
+- **TTS**: 支持多种TTS服务
+- **数据库**: MySQL 8.0+
+- **音频格式**: 16kHz PCM
+
+## 🤝 兼容性
+
+- **客户端**: robot-agent v2.0+
+- **Ollama**: v0.1.0+
+- **Python**: 3.8+
+- **操作系统**: Linux, macOS, Windows
+
+## 📝 API文档
+
+### WebSocket端点
+- **路径**: `/ws`
+- **协议**: WebSocket
+- **端口**: 8889
+
+### 消息格式
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "方法名",
+  "params": {
+    "参数": "值"
+  },
+  "id": "消息ID"
+}
+```
+
+## 🔒 安全考虑
+
+1. **WebSocket认证**: 基于MAC地址的设备认证
+2. **输入验证**: 严格的消息格式验证
+3. **资源限制**: 音频文件大小和时长限制
+4. **错误处理**: 优雅的错误处理和恢复
+
+---
+
+> 这个项目是重构后的简化版本，采用本地Ollama模型，降低了API调用成本，同时保持了核心的语音对话功能。
