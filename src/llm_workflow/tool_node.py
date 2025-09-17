@@ -26,7 +26,7 @@ def get_tool_definition(tools_definition: List[Dict[str, Any]], tool_name: str) 
             return tool
     return None
 
-def tool_node(state: AgentState, config: Optional[RunnableConfig] = None):
+async def tool_node(state: AgentState, config: Optional[RunnableConfig] = None):
 
     logger.info("==========tool_node==========")
 
@@ -55,7 +55,11 @@ def tool_node(state: AgentState, config: Optional[RunnableConfig] = None):
         if tool_definition["main_type"] == "local":
             if tool_definition["sub_type"] == "async":
                 tool_results.append(ToolMessage(content="正在处理中", tool_call_id=tool_call["id"]))
-                asyncio.create_task(local_tools[tool_name](**tool_call['args']))
+                if tool_name == "get_music":
+                    await play_music_wrapper(tool_call['args'], client_session)
+                else:
+                    # 对于其他异步本地工具，使用 asyncio.create_task 但确保在异步上下文中
+                    asyncio.create_task(local_tools[tool_name](**tool_call['args']))
             elif tool_definition["sub_type"] == "sync":
                 if tool_name in local_tools:
                     tool_function = local_tools[tool_name]
@@ -67,14 +71,13 @@ def tool_node(state: AgentState, config: Optional[RunnableConfig] = None):
                     tool_results.append(ToolMessage(content=f"工具 '{tool_name}' 未找到", tool_call_id=tool_call["id"]))
         elif tool_definition["main_type"] == "remote":
             tool_results.append(ToolMessage(content="正在处理中", tool_call_id=tool_call["id"]))
-            asyncio.create_task(client_session.send_json(create_tool_execution_request(tool_name, tool_call['args'])))
-
-            asyncio.create_task(client_session.send_mcp_event(
-            method="mcp/tool/execute",
-            params={
-                "tool_name": tool_name,
-                "tool_input": tool_call['args']
-            }))
+            await client_session.send_json(create_tool_execution_request(tool_name, tool_call['args']))
+            await client_session.send_mcp_event(
+                method="mcp/tool/execute",
+                params={
+                    "tool_name": tool_name,
+                    "tool_input": tool_call['args']
+                })
 
     logger.info(f"==========tool_node result: {tool_results}==========")
     state["messages"] = tool_results

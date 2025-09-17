@@ -35,7 +35,8 @@ def build_workflow():
             "chat": "chat",
             "tool": "tool",
             "music": "music",
-            "notify_listen": "notify_listen"
+            "notify_listen": "notify_listen",
+            END: END
         }
     )
     workflow.add_conditional_edges(
@@ -45,7 +46,8 @@ def build_workflow():
             "chat": "chat",
             "tool": "tool",
             "music": "music",
-            "notify_listen": "notify_listen"
+            "notify_listen": "notify_listen",
+            END: END
         }
     )
     workflow.add_conditional_edges(
@@ -55,7 +57,8 @@ def build_workflow():
             "chat": "chat",
             "tool": "tool",
             "music": "music",
-            "notify_listen": "notify_listen"
+            "notify_listen": "notify_listen",
+            END: END
         }
     )
     workflow.add_conditional_edges(
@@ -65,7 +68,8 @@ def build_workflow():
             "chat": "chat",
             "tool": "tool",
             "music": "music",
-            "notify_listen": "notify_listen"
+            "notify_listen": "notify_listen",
+            END: END
         }
     )
     workflow.add_conditional_edges(
@@ -75,7 +79,8 @@ def build_workflow():
             "chat": "chat",
             "tool": "tool",
             "music": "music",
-            "notify_listen": "notify_listen"
+            "notify_listen": "notify_listen",
+            END: END
         }
     )
     return workflow.compile()
