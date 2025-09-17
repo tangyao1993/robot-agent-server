@@ -4,4 +4,3 @@ assets/
 *.raw
 models/
 *.pyc
-gemini_keys
