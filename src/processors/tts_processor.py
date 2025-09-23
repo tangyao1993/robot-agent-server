@@ -9,7 +9,7 @@ from typing import AsyncGenerator, Optional
 logger = logging.getLogger(__name__)
 
 class TTSProcessor:
-    def __init__(self, api_url: str = "192.168.1.4:5001", api_key: Optional[str] = None):
+    def __init__(self, api_url: str = "192.168.1.5:5001", api_key: Optional[str] = None):
         """
         初始化TTS处理器
         

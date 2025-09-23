@@ -12,7 +12,7 @@ class SpeechRecognizer:
     语音识别器类，用于将音频转换为文本
     """
     
-    def __init__(self, server_url: str = "http://192.168.1.4:50000/api/v1/asr"):
+    def __init__(self, server_url: str = "http://192.168.1.5:50000/api/v1/asr"):
         """
         初始化语音识别器
         
