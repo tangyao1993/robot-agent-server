@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 class OllamaClient:
     """Ollama本地LLM客户端"""
-    def __init__(self, base_url: str = "http://192.168.1.4:11434", model: str = "qwen2.5:7b"):
+    def __init__(self, base_url: str = "http://192.168.1.5:11434", model: str = "qwen2.5:7b"):
         self.base_url = base_url
         self.model = model
         logger.info(f"初始化Ollama客户端: {base_url}, 模型: {model}")

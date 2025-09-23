@@ -97,7 +97,7 @@ robot-agent-server/
 ### 环境变量
 ```bash
 # Ollama配置
-OLLAMA_BASE_URL=http://192.168.1.4:11434
+OLLAMA_BASE_URL=http://192.168.1.5:11434
 OLLAMA_MODEL=qwen2.5:7b
 
 # TTS服务配置（可选）
