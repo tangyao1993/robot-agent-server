@@ -83,9 +83,17 @@ class ClientSession:
         await self.send_mcp_event(method="mcp/server/start_audio")
         logger.info("start_audio 指令发送完成")
         
-        # 2. 发送音频数据
+        # 2. 发送音频数据（分块发送）
         logger.info("发送音频数据...")
-        await self.send_binary(audio_data)
+        chunk_size = 64 * 1024  # 64KB chunks
+        total_sent = 0
+        
+        for i in range(0, len(audio_data), chunk_size):
+            chunk = audio_data[i:i + chunk_size]
+            await self.send_binary(chunk)
+            total_sent += len(chunk)
+            logger.info(f"已发送 {total_sent}/{len(audio_data)} 字节")
+        
         logger.info("音频数据发送完成")
             
         # 3. 发送结束信号
