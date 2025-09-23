@@ -60,7 +60,9 @@ class ClientSession:
         """异步发送二进制数据到客户端"""
         if self.websocket.state == State.OPEN:
             try:
+                logger.info(f"发送二进制数据到 [{self.mac_addr}], 大小: {len(data)} 字节")
                 await self.websocket.send(data)
+                logger.info(f"二进制数据发送成功")
             except Exception as e:
                 logger.error(f"发送二进制数据到 {self.mac_addr or self.remote_address} 失败: {e}")
         else:
@@ -74,11 +76,20 @@ class ClientSession:
         if not audio_data:
             return
             
+        logger.info(f"开始发送音频流程，数据大小: {len(audio_data)} 字节")
+        
         # 1. 发送控制指令
+        logger.info("发送 start_audio 指令...")
         await self.send_mcp_event(method="mcp/server/start_audio")
+        logger.info("start_audio 指令发送完成")
         
         # 2. 发送音频数据
+        logger.info("发送音频数据...")
         await self.send_binary(audio_data)
+        logger.info("音频数据发送完成")
             
         # 3. 发送结束信号
-        await self.send_binary(b'') 
+        logger.info("发送结束信号...")
+        await self.send_binary(b'')
+        logger.info("结束信号发送完成")
+        logger.info("音频流程发送完成") 

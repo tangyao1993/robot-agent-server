@@ -98,7 +98,9 @@ class TTSProcessor:
                 )
                 
                 if response.status_code == 200:
-                    return await response.aread()
+                    audio_data = await response.aread()
+                    self.logger.info(f"TTS返回音频数据大小: {len(audio_data)} 字节")
+                    return audio_data
                 else:
                     self.logger.error(f"TTS API 请求失败: {response.status_code}")
                     return b'\x00' * 3200

@@ -109,7 +109,11 @@ class MessageHandler:
                 # 使用TTS生成音频
                 audio_data = await self.tts_processor.text_to_speech(result.bot_text)
                 if audio_data:
+                    logger.info(f"准备发送音频数据到客户端 [{session.mac_addr}], 大小: {len(audio_data)} 字节")
                     await session.send_audio(audio_data)
+                    logger.info(f"音频数据发送完成")
+                else:
+                    logger.warning(f"TTS返回空音频数据，文本: {result.bot_text}")
                     
         except Exception as e:
             logger.error(f"LLM处理失败: {e}", exc_info=True)
