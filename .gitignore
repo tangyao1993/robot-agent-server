@@ -4,3 +4,5 @@ assets/
 *.raw
 models/
 *.pyc
+checkpoints
+simulator
