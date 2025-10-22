@@ -16,5 +16,4 @@ langchain-openai
 langgraph
 langchain_ollama
 aiomysql
-httpx
 aiohttp
