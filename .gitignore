@@ -5,4 +5,4 @@ assets/
 models/
 *.pyc
 checkpoints
-simulator
+*.wav
