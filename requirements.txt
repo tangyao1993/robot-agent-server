@@ -12,6 +12,7 @@ silero-vad
 onnxruntime
 langchain
 langchain-core
+langchain-openai
 langgraph
 langchain_ollama
 aiomysql
